@@ -12,7 +12,7 @@ dependencies:
   - matplotlib
   - notebook
   - numpy
-  - pandas
+  - pandas=1.5.3
   - scikit-learn
   - seaborn
   - ruff
