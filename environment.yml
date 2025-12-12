@@ -15,7 +15,8 @@ dependencies:
   - pandas=1.5.3
   - scikit-learn
   - seaborn
-  - ru
+  - scipy
+  - rust
   - pytest
   - linearmodels
   - statsmodels
