@@ -15,10 +15,12 @@ dependencies:
   - pandas=1.5.3
   - scikit-learn
   - seaborn
-  - ruff
+  - ru
   - pytest
+  - linearmodels
+  - statsmodels
   - pip:
     - python-dotenv
     - mkdocs
-    - pyampute 
+    - pyampute
     - -e .
