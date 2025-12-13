@@ -16,10 +16,10 @@ dependencies:
   - scikit-learn
   - seaborn
   - scipy
+  - statsmodels
   - rust
   - pytest
   - linearmodels
-  - statsmodels
   - pip:
     - python-dotenv
     - mkdocs
