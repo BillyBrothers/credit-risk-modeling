@@ -10,6 +10,7 @@ dependencies:
   - ipython
   - jupyterlab
   - matplotlib
+  - missingno
   - notebook
   - numpy
   - pandas=1.5.3
