@@ -21,6 +21,7 @@ dependencies:
   - rust
   - pytest
   - linearmodels
+  - feature_engine
   - pip:
     - python-dotenv
     - mkdocs
