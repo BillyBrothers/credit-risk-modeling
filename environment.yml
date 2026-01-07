@@ -25,6 +25,8 @@ dependencies:
   - feature_engine
   - pytest = 7.2.2
   - imbalanced-learn>=0.11
+  - xgboost
+  - lightgbm
   - pip:
     - python-dotenv
     - mkdocs
