@@ -1,3 +1,5 @@
+import numpy as np
+
 def get_model_label(est, index=None, include_params=None):
     """ Pass an estimator and will return name of estimator and used hyperparameters"""
     name = est.__class__.__name__
