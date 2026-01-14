@@ -256,7 +256,6 @@ def evaluate_calibration(final_model_performances, preferred_fitted_models, X_tr
         )
 
     # Perfect calibration line
-    ax.plot([0, 1], [0, 1], "k--", label="Perfect calibration")
     plt.title("Calibration Curves: Sigmoid vs Isotonic")
     plt.xlabel("Mean predicted probability")
     plt.ylabel("Fraction of positives")
