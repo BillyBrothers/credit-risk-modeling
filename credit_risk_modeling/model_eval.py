@@ -87,7 +87,8 @@ def get_model_label(est, index=None, include_params=None):
 
 def comparing_models(models, X_train, y_train, X_test, y_test):
     """ Pass a list of models and the function with calculate predictions and positive probabilites and use those to produce classification
-     based performance metrics. A dataframe containing the performance metrics for each model and the fitted model will be stored in a dictionary. """
+     based performance metrics. A dataframe containing the performance metrics for each model and the fitted model will be stored in a dictionary. used to 
+      compare both untuned models and internally tuned models. For manually tuned models use comparing_manually_tuned_models. """
     results = []
     fitted_models = {}
 
@@ -138,8 +139,12 @@ def comparing_models(models, X_train, y_train, X_test, y_test):
                 "matthews_corrcoef": np.nan,
                 "error": str(e)
             })
+    df = pd.DataFrame(results).sort_values(
+        ascending=False,
+        by= 'roc_auc'
+    )
 
-    return pd.DataFrame(results), fitted_models
+    return df, fitted_models
 
 
 def comparing_manually_tuned_models(models, X_train, y_train, X_test, y_test):
@@ -196,16 +201,17 @@ def comparing_manually_tuned_models(models, X_train, y_train, X_test, y_test):
                 "error": str(e)
             })
 
-    return pd.DataFrame(results), fitted_models_manual
+        df= pd.DataFrame(results).sort_values(
+            ascending=False,
+            by= 'roc_auc'
+        )
+    return df, fitted_models_manual
 
 def combine_model_performance(internal_tuned_models_df, manual_tuned_models_df):
     """Concatanate your performance dataframes."""
     return pd.concat(
     objs = [internal_tuned_models_df, manual_tuned_models_df],
     axis=0
-    ).sort_values(
-    by = 'roc_auc',
-    ascending=False
     )
 
 def evaluate_calibration(final_model_performances, preferred_fitted_models, X_train, y_train, X_test, y_test):
