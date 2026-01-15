@@ -56,6 +56,9 @@ from credit_risk_modeling import model_eval
 import importlib
 importlib.reload(model_eval)
 
+# Class Imbalance
+from imblearn.over_sampling import SMOTE
+
 def get_model_label(est, index=None, include_params=None):
     """ Pass an estimator and will return name of estimator and used hyperparameters"""
     name = est.__class__.__name__
@@ -97,6 +100,71 @@ def comparing_models(models, X_train, y_train, X_test, y_test):
 
         try:
             est.fit(X_train, y_train)
+            fitted_models[model_name] = est 
+
+            y_pred = est.predict(X_test)
+
+            roc_auc = np.nan
+            pr_auc = np.nan
+            ll = np.nan
+            bcl = np.nan
+
+            if hasattr(est, "predict_proba"):
+                pos_prob = est.predict_proba(X_test)[:, 1]
+                roc_auc = roc_auc_score(y_test, pos_prob)
+                pr_auc = average_precision_score(y_test, pos_prob)
+                ll = log_loss(y_test, pos_prob)
+                bcl = brier_score_loss(y_test, pos_prob)
+
+            elif hasattr(est, "decision_function"):
+                scores = est.decision_function(X_test)
+                roc_auc = roc_auc_score(y_test, scores)
+                pr_auc = average_precision_score(y_test, scores)
+
+            mc = matthews_corrcoef(y_test, y_pred)
+
+            results.append({
+                "model": model_name,
+                "roc_auc": roc_auc,
+                "pr_auc": pr_auc,
+                "log_loss": ll,
+                "brier_score": bcl,
+                "matthews_corrcoef": mc,
+            })
+
+        except Exception as e:
+            results.append({
+                "model": model_name,
+                "roc_auc": np.nan,
+                "pr_auc": np.nan,
+                "log_loss": np.nan,
+                "brier_score": np.nan,
+                "matthews_corrcoef": np.nan,
+                "error": str(e)
+            })
+    df = pd.DataFrame(results).sort_values(
+        ascending=False,
+        by= 'roc_auc'
+    )
+
+    return df, fitted_models
+
+
+def comparing_models_smoted(models, X_train, y_train, X_test, y_test, sampling_strategy='minority'):
+    """ Pass a list of models and the function with calculate predictions and positive probabilites and use those to produce classification
+     based performance metrics. A dataframe containing the performance metrics for each model and the fitted model will be stored in a dictionary. Used to 
+      compare both untuned models and internally tuned models. For manually tuned models use comparing_manually_tuned_models. Used for models that don't internally handle. """
+    results = []
+    fitted_models = {}
+
+    for est in models:
+        model_name = get_model_label(est)
+
+        try:
+            smote = SMOTE(sample_strategy=sampling_strategy)
+            X_trained_smoted, y_train_smoted = smote.fit_resample(X_train, y_train)
+
+            est.fit(X_trained_smoted, y_train_smoted)
             fitted_models[model_name] = est 
 
             y_pred = est.predict(X_test)
