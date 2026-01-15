@@ -161,7 +161,7 @@ def comparing_models_smoted(models, X_train, y_train, X_test, y_test, sampling_s
         model_name = get_model_label(est)
 
         try:
-            smote = SMOTE(sample_strategy=sampling_strategy)
+            smote = SMOTE(sampling_strategy=sampling_strategy)
             X_trained_smoted, y_train_smoted = smote.fit_resample(X_train, y_train)
 
             est.fit(X_trained_smoted, y_train_smoted)
@@ -226,6 +226,68 @@ def comparing_manually_tuned_models(models, X_train, y_train, X_test, y_test):
 
         try:
             est.fit(X_train, y_train)
+            fitted_models_manual[model_name] = est.best_estimator_ 
+
+            y_pred = est.best_estimator_.predict(X_test)
+
+            roc_auc = np.nan
+            pr_auc = np.nan
+            ll = np.nan
+            bcl = np.nan
+
+            if hasattr(est.best_estimator_, "predict_proba"):
+                pos_prob = est.best_estimator_.predict_proba(X_test)[:, 1]
+                roc_auc = roc_auc_score(y_test, pos_prob)
+                pr_auc = average_precision_score(y_test, pos_prob)
+                ll = log_loss(y_test, pos_prob)
+                bcl = brier_score_loss(y_test, pos_prob)
+
+            elif hasattr(est.best_estimator_, "decision_function"):
+                scores = est.best_estimator_.decision_function(X_test)
+                roc_auc = roc_auc_score(y_test, scores)
+                pr_auc = average_precision_score(y_test, scores)
+
+            mc = matthews_corrcoef(y_test, y_pred)
+
+            results.append({
+                "model": model_name,
+                "roc_auc": roc_auc,
+                "pr_auc": pr_auc,
+                "log_loss": ll,
+                "brier_score": bcl,
+                "matthews_corrcoef": mc
+            })
+
+        except Exception as e:
+            results.append({
+                "model": model_name,
+                "roc_auc": np.nan,
+                "pr_auc": np.nan,
+                "log_loss": np.nan,
+                "brier_score": np.nan,
+                "matthews_corrcoef": np.nan,
+                "error": str(e)
+            })
+
+        df= pd.DataFrame(results).sort_values(
+            ascending=False,
+            by= 'roc_auc'
+        )
+    return df, fitted_models_manual
+
+def comparing_manually_tuned_smoted_models(models, X_train, y_train, X_test, y_test, sampling_strategy='minority'):
+    """Pass a list of models that required prior manual hyperparameter tuning and are wrapped in a tuning object (e.g. RandomizedSearchCV) and the function with calculate predictions and positive probabilites and use those to produce classification
+     based performance metrics. A dataframe containing the performance metrics for each model and the fitted model will be stored in a dictionary. """
+    results = []
+    fitted_models_manual = {}
+
+    for est in models:
+        model_name = get_model_label(est.estimator)
+
+        try:
+            smote = SMOTE(sampling_strategy=sampling_strategy)
+            X_trained_smoted, y_train_smoted = smote.fit_resample(X_train, y_train)
+            est.fit(X_trained_smoted, y_train_smoted)
             fitted_models_manual[model_name] = est.best_estimator_ 
 
             y_pred = est.best_estimator_.predict(X_test)
