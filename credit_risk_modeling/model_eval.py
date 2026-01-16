@@ -342,6 +342,9 @@ def combine_model_performance(internal_tuned_models_df, manual_tuned_models_df):
     return pd.concat(
     objs = [internal_tuned_models_df, manual_tuned_models_df],
     axis=0
+    ).sort_values(
+        ascending=False,
+        by='roc_auc'
     )
 
 def evaluate_calibration(final_model_performances, preferred_fitted_models, X_train, y_train, X_test, y_test):
