@@ -337,10 +337,10 @@ def comparing_manually_tuned_smoted_models(models, X_train, y_train, X_test, y_t
         )
     return df, fitted_models_manual
 
-def combine_model_performance(internal_tuned_models_df, manual_tuned_models_df):
+def combine_model_performance(internal_tuned_models_df, manual_tuned_models_df, untuned_model_performance):
     """Concatanate your performance dataframes."""
     return pd.concat(
-    objs = [internal_tuned_models_df, manual_tuned_models_df],
+    objs = [internal_tuned_models_df, manual_tuned_models_df, untuned_model_performance],
     axis=0
     ).sort_values(
         ascending=False,
