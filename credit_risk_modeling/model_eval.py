@@ -3,11 +3,11 @@ import pandas as pd
 import numpy as np
 
 # visualization
-# import matplotlib.pyplot as plt
-# import seaborn as sns
-# from pyampute.exploration.md_patterns import mdPatterns
-# from pyampute.exploration.mcar_statistical_tests import MCARTest
-# import missingno as msno
+import matplotlib.pyplot as plt
+import seaborn as sns
+from pyampute.exploration.md_patterns import mdPatterns
+from pyampute.exploration.mcar_statistical_tests import MCARTest
+import missingno as msno
 
 
 # preprocessing
