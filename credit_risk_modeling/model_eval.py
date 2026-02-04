@@ -3,11 +3,11 @@ import pandas as pd
 import numpy as np
 
 # visualization
-import matplotlib.pyplot as plt
-import seaborn as sns
-from pyampute.exploration.md_patterns import mdPatterns
-from pyampute.exploration.mcar_statistical_tests import MCARTest
-import missingno as msno
+# import matplotlib.pyplot as plt
+# import seaborn as sns
+# from pyampute.exploration.md_patterns import mdPatterns
+# from pyampute.exploration.mcar_statistical_tests import MCARTest
+# import missingno as msno
 
 
 # preprocessing
@@ -27,7 +27,7 @@ from sklearn.compose import ColumnTransformer, make_column_selector
 from feature_engine.outliers import Winsorizer
 # from imblearn.over_sampling import SMOTE, SMOTENC
 from sklearn.pipeline import Pipeline
-from sklearn import set_config
+# from sklearn import set_config
 
 # Feature Selection
 from sklearn.feature_selection import SelectFromModel
