@@ -63,8 +63,12 @@ def get_model_label(est, index=None, include_params=None):
     """Return a readable label for an estimator, including SciKeras models."""
 
     # Special handling for SciKeras KerasClassifier
-    if hasattr(est, "model") and callable(est.model):
-        name = est.model.__name__  
+    if hasattr(est, "model"):
+        # est.model is a Sequential instance, so use its .name attribute
+        try:
+            name = est.model.name
+        except AttributeError:
+            name = est.__class__.__name__
     else:
         name = est.__class__.__name__
 
@@ -87,7 +91,6 @@ def get_model_label(est, index=None, include_params=None):
         label = f"{label}__{index}"
 
     return label
-
 
 
 def comparing_models(models, X_train, y_train, X_test, y_test):
