@@ -370,7 +370,6 @@ def evaluate_calibration(final_model_performances, preferred_fitted_models, X_tr
                                     optimizer= keras.optimizers.Adam(),
                                     loss= keras.losses.BinaryCrossentropy(),
                                     random_state=42,
-                                    class_weight= {0: 1.0, 1: 2.0},
                                     metrics= ['val_auc'],
                                     callbacks= [keras.callbacks.EarlyStopping(monitor='val_loss',min_delta=1e-4,patience=7,verbose=1,restore_best_weights=True ),keras.callbacks.ReduceLROnPlateau(monitor="val_loss",factor=0.2,patience=3,verbose=1,min_lr=0.001)],
                                     validation_split= 0.20,
