@@ -56,6 +56,12 @@ from credit_risk_modeling import model_eval
 import importlib
 importlib.reload(model_eval)
 
+import tensorflow as tf
+from tensorflow import keras
+from keras import layers
+from scikeras.wrappers import KerasClassifier
+import keras_tuner as kt
+
 # Class Imbalance
 from imblearn.over_sampling import SMOTE
 
@@ -352,12 +358,30 @@ def combine_model_performance(internal_tuned_models_df, manual_tuned_models_df, 
         by='roc_auc'
     )
 
+
+
 def evaluate_calibration(final_model_performances, preferred_fitted_models, X_train, y_train, X_test, y_test):
     """Final_model_performance parameter is the concatenation returned by combine_model_performance function. Fitted Models parameter is returned by your comparing models function and depends on dictionary of models you chose
     (e.g. internally tuned models or manually tuned models)"""
     top_model_name = final_model_performances.iloc[0]['model']
-    top_performing_model = preferred_fitted_models[top_model_name]
+    
+    if hasattr(top_model_name, 'layers'):
+            top_performing_model = KerasClassifier(
+                                    model= top_model_name,
+                                    optimizer= keras.optimizers.Adam(),
+                                    loss= keras.losses.BinaryCrossentropy(),
+                                    random_state=42,
+                                    class_weight= class_weight,
+                                    metrics= ['val_auc'],
+                                    callbacks= [early_stopping, reduce_lr_plateau],
+                                    validation_split= 0.20,
+                                    epochs=100
+                                )
+    else:
+            top_performing_model = preferred_fitted_models[top_model_name]
+
     methods = ['sigmoid', 'isotonic']
+
 
     calibrated_models = {}   # store models here
 
