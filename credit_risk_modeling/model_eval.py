@@ -359,7 +359,6 @@ def combine_model_performance(internal_tuned_models_df, manual_tuned_models_df, 
     )
 
 
-
 def evaluate_calibration(final_model_performances, preferred_fitted_models, X_train, y_train, X_test, y_test):
     """Final_model_performance parameter is the concatenation returned by combine_model_performance function. Fitted Models parameter is returned by your comparing models function and depends on dictionary of models you chose
     (e.g. internally tuned models or manually tuned models)"""
@@ -371,9 +370,9 @@ def evaluate_calibration(final_model_performances, preferred_fitted_models, X_tr
                                     optimizer= keras.optimizers.Adam(),
                                     loss= keras.losses.BinaryCrossentropy(),
                                     random_state=42,
-                                    class_weight= class_weight,
+                                    class_weight= {0: 1.0, 1: 2.0},
                                     metrics= ['val_auc'],
-                                    callbacks= [early_stopping, reduce_lr_plateau],
+                                    callbacks= [keras.callbacks.EarlyStopping(monitor='val_loss',min_delta=1e-4,patience=7,verbose=1,restore_best_weights=True ),keras.callbacks.ReduceLROnPlateau(monitor="val_loss",factor=0.2,patience=3,verbose=1,min_lr=0.001)],
                                     validation_split= 0.20,
                                     epochs=100
                                 )
