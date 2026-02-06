@@ -60,32 +60,34 @@ importlib.reload(model_eval)
 from imblearn.over_sampling import SMOTE
 
 def get_model_label(est, index=None, include_params=None):
-    """ Pass an estimator and will return name of estimator and used hyperparameters"""
-    name = est.__class__.__name__
-    params = est.get_params()
+    """Return a readable label for an estimator, including SciKeras models."""
 
+    # Special handling for SciKeras KerasClassifier
+    if hasattr(est, "model") and callable(est.model):
+        name = est.model.__name__  
+    else:
+        name = est.__class__.__name__
+
+    params = est.get_params()
     key_parts = []
 
-    # Include parameters that distinguish your models
     if include_params is None:
         include_params = ['penalty', 'solver', 'n_jobs', 'l1_ratio', 'l1_ratios', 'Cs', 'class_weight']
+
     for p in include_params:
         if p in params:
             val = params[p]
-
-            # Convert numpy arrays to lists for stable string formatting
             if isinstance(val, np.ndarray):
                 val = val.tolist()
-
             key_parts.append(f"{p}={val}")
 
     label = f"{name} ({', '.join(key_parts)})" if key_parts else name
 
-    # Add index suffix to guarantee uniqueness
     if index is not None:
         label = f"{label}__{index}"
 
     return label
+
 
 
 def comparing_models(models, X_train, y_train, X_test, y_test):
