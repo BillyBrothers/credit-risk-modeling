@@ -82,7 +82,7 @@ def get_model_label(est, index=None, include_params=None):
     key_parts = []
 
     if include_params is None:
-        include_params = ['penalty', 'solver', 'n_jobs', 'l1_ratio', 'l1_ratios', 'Cs', 'class_weight']
+        include_params = ['penalty', 'solver', 'n_jobs', 'l1_ratio', 'l1_ratios', 'Cs']
 
     for p in include_params:
         if p in params:
