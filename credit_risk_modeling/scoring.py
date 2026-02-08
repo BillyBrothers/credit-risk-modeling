@@ -119,7 +119,16 @@ def normalize_to_risk_score(pd: float) -> tuple:
         tuple: (risk_score: int 0-100, risk_tier: str)
     """
 
-    int(np.clip(pd * 100, 100))
+    risk_score = int(np.clip(a = pd * 100, a_min = 0, a_max = 100))
+
+    if risk_score < 33:
+        risk_tier = 'LOW'
+    elif risk_score < 67:
+        risk_tier = "MEDIUM"
+    else:
+        risk_tier = 'HIGH'
+    
+    return risk_score, risk_tier
 
 
 
