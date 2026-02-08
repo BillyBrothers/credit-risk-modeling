@@ -45,6 +45,19 @@ def calculate_pd(features: dict, model, preprocessor) -> float:
 
 def calculate_ead(features: dict) -> float:
     """
-    Calculate Exposure at Default (EAD) = loan amount
+    Calculate Exposure at Default (EAD) = loan amount.
+
+    Args:
+        features: dict with "loan_amnt" key
+
+    Returns:
+        float: Loan amount in dollars
     """
-    
+    ead = features.get('loan_amnt', 0.0)
+    if ead <= 0:
+        logger.warning(f"Invalid EAD: {ead}")
+        return 0.0
+    return float(ead)
+
+def get_lgd_by_segment
+
