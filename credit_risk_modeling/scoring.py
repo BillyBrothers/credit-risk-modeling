@@ -130,5 +130,18 @@ def normalize_to_risk_score(pd: float) -> tuple:
     
     return risk_score, risk_tier
 
+def calculate_confidence(pd: float) -> float:
+    """
+    Calculate confidence score (how sure is the model?).
+    Based on distance from 50% probability (most confident at 0% or 100%).
 
+    Args:
+        pd: Probability of Default (0-1)
+    
+    Returns:
+        float: Confidence 0-1
+    """
+    
+    confidence = 1 - abs(pd - 0.5) * 2
+    return float(np.clip(confidence, 0, 1))
 
