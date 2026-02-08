@@ -56,11 +56,11 @@ from credit_risk_modeling import model_eval
 import importlib
 importlib.reload(model_eval)
 
-import tensorflow as tf
-from tensorflow import keras
-from keras import layers
-from scikeras.wrappers import KerasClassifier
-import keras_tuner as kt
+# import tensorflow as tf
+# from tensorflow import keras
+# from keras import layers
+# from scikeras.wrappers import KerasClassifier
+# import keras_tuner as kt
 
 # Class Imbalance
 from imblearn.over_sampling import SMOTE
