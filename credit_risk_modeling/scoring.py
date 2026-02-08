@@ -1,8 +1,6 @@
-"Scoring and Decision Engine: Backend for scoring metrics" 
 import json
 import joblib
 import numpy as np
-import pandas as pd
 from pathlib import Path
 from loguru import logger
 from credit_risk_modeling.config import MODELS_DIR
@@ -18,33 +16,79 @@ def load_model_and_preprocessor():
         logger.error(f"✗ Model files not found: {e}")
         raise
 
-
-def calculate_pd(features: dict, model, preprocessor) -> float:
+def calculate_pd_from_raw(features: dict, model, preprocessor) -> float:
     """
-    Calculate Probability of Default (PD) using the trained LightGBM model.
+    Calculate Probability of Default (PD) from RAW applicant features (11 features).
+    
+    PRODUCTION USE: Pass in raw applicant data (11 features).
+    The preprocessor will transform to 19 features, then model predicts.
     
     Args:
-
-        features: dict of applicant features (raw or preprocessed)
+        features: dict with 11 raw features
+                  {'person_age': 25, 'loan_amnt': 35000, ...}
         model: Trained LightGBM classifier
-        preprocessor: Fitted preprocessing pipeline
+        preprocessor: Fitted preprocessing pipeline (11→19 features)
     
     Returns:
-        float: Probability between 0-1
+        float: Probability of default between 0-1
     """
-
-    # Convert dict to DataFrame (expected by preprocessor)
+    import pandas as pd
+    
+    # Convert dict to DataFrame (11 raw features)
     X = pd.DataFrame([features])
     
-    # Use only the feature columns expected by preprocessor
+    # Apply preprocessing pipeline: 12 raw → 19 preprocessed features
     try:
         X_preprocessed = preprocessor.transform(X)
     except Exception as e:
-        logger.warning(f"Preprocessing failed, attempting direct prediction: {e}")
-        X_preprocessed = X
+        logger.error(f"Preprocessing failed for raw features: {e}")
+        raise
     
-    # Get probability of default (class 1)
-    pd_value = model.predict_proba(X_preprocessed)[0, 1]
+    # Get probability of default from model (expects 19 features)
+    try:
+        pd_value = model.predict_proba(X_preprocessed, predict_disable_shape_check=True)[0, 1]
+    except TypeError:
+        # Fallback if predict_disable_shape_check not supported
+        pd_value = model.predict_proba(X_preprocessed)[0, 1]
+    
+    logger.debug(f"Calculated PD: {pd_value:.4f} from raw features")
+    return float(pd_value)
+
+
+def calculate_pd_from_preprocessed(X_preprocessed, model) -> float:
+    """
+    Calculate Probability of Default (PD) from PREPROCESSED features (19 features).
+    
+    TESTING/VALIDATION USE: Pass in already-preprocessed features (19 features).
+    Skips preprocessing step.
+    
+    Args:
+        X_preprocessed: DataFrame or array with 19 preprocessed features
+        model: Trained LightGBM classifier
+    
+    Returns:
+        float: Probability of default between 0-1
+    """
+    import pandas as pd
+    
+    # Ensure it's a DataFrame with proper shape (1 row)
+    if isinstance(X_preprocessed, dict):
+        X_preprocessed = pd.DataFrame([X_preprocessed])
+    elif not isinstance(X_preprocessed, pd.DataFrame):
+        X_preprocessed = pd.DataFrame(X_preprocessed)
+    
+    # X_preprocessed should have exactly 19 columns
+    if X_preprocessed.shape[1] != 19:
+        logger.warning(f"Expected 19 preprocessed features, got {X_preprocessed.shape[1]}")
+    
+    # Get probability of default from model (already preprocessed)
+    try:
+        pd_value = model.predict_proba(X_preprocessed, predict_disable_shape_check=True)[0, 1]
+    except TypeError:
+        # Fallback if predict_disable_shape_check not supported
+        pd_value = model.predict_proba(X_preprocessed)[0, 1]
+    
+    logger.debug(f"Calculated PD: {pd_value:.4f} from preprocessed features")
     return float(pd_value)
 
 def calculate_ead(features: dict) -> float:
@@ -52,12 +96,13 @@ def calculate_ead(features: dict) -> float:
     Calculate Exposure at Default (EAD) = loan amount.
     
     Args:
-        features: dict with 'loan_amnt' key
+        features: dict with 'loan_amnt' key (or 'numeric__loan_amnt' if preprocessed)
     
     Returns:
         float: Loan amount in dollars
     """
-    ead = features.get('loan_amnt', 0.0)
+    # Try both raw and preprocessed column names
+    ead = features.get('loan_amnt') or features.get('numeric__loan_amnt', 0.0)
     if ead <= 0:
         logger.warning(f"Invalid EAD: {ead}")
         return 0.0
@@ -152,10 +197,12 @@ def score_applicant(features: dict, phase: int = 2) -> dict:
     """
     Score a single applicant with full PD/LGD/EAD/EL components.
     
+    PRODUCTION FUNCTION: Pass in raw applicant features (12 features).
     This is the main function called by both the API and batch processing.
     
     Args:
-        features: dict of applicant features
+        features: dict of 12 raw applicant features
+                  {'person_age': 25, 'loan_intent': 'PERSONAL', ...}
         phase: 2 (simplified LGD=1.0) or 3 (segment-specific LGD)
     
     Returns:
@@ -172,8 +219,8 @@ def score_applicant(features: dict, phase: int = 2) -> dict:
     try:
         model, preprocessor = load_model_and_preprocessor()
         
-        # Calculate risk components
-        pd = calculate_pd(features, model, preprocessor)
+        # Calculate risk components - using raw features
+        pd = calculate_pd_from_raw(features, model, preprocessor)
         ead = calculate_ead(features)
         loan_intent = features.get('loan_intent', 'UNKNOWN')
         lgd = get_lgd_by_segment(loan_intent, phase=phase)
