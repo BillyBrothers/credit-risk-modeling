@@ -59,5 +59,53 @@ def calculate_ead(features: dict) -> float:
         return 0.0
     return float(ead)
 
-def get_lgd_by_segment
+def get_lgd_by_segment(loan_intent: str, phase: int = 2) -> float:
+    """
+    Get Loss Given Default (LGD) by loan segment.
+
+    Phase 2: Return 1.0 (100% loss - simplified baseline)
+    Phase 3: Load from lgd_by_segment.json (recovered-amount-based)
+
+    Args:
+        loan_intent: Type of loan (PERSONAL, EDUCATION, MEDICAL, etc.)
+        phase: 2 for simplified, 3 for segment-specific
+
+    Returns:
+        float: LGD between 0-1
+    """
+
+    if phase == 2:
+        return 1.0 # Assume 100% loss for all defaulted loans (Phase 2 baseline)
+    
+    elif phase == 3:
+        try:
+            lgd_path = "../models/lgd_by_segment.json"
+            with open(lgd_path, 'r') as f:
+                lgd_map = json.load(f)
+            return lgd_map.get(loan_intent, 1.0)
+        except FileNotFoundError as e:
+            logger.warning(f"LGD file not found, default to 1.0")
+            return 1.0
+    else:
+        logger.error(f"Unknown phase: {phase}")
+        return 1.0
+    
+def calculate_expected_loss(pd: float, lgd: float, ead: float) -> float:
+    """
+    Calculate Expected Loss (EL) using the credit risk formula.
+
+    EL = PD x LGD x EAD
+
+    Args:
+        pd: Probability of Default (0-1)
+        lgd: Loss Given Default (0-1)
+        ead: Exposure at Default ($)
+
+    Returns:
+        float: Expected Loss in dollars
+    """
+    el = pd * lgd * ead
+    return float(el)
+
+
 
