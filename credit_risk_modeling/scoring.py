@@ -1,3 +1,4 @@
+"Scoring and Decision Engine: Backend for scoring metrics" 
 import json
 import joblib
 import numpy as np
@@ -5,51 +6,52 @@ from pathlib import Path
 from loguru import logger
 from credit_risk_modeling.config import MODELS_DIR
 
-
 def load_model_and_preprocessor():
-    """Load the best trained model and preprocessing steps from models/ directory"""
+    """Load the best trained model and preprocessing pipeline from models/ directory."""
     try:
-        model = joblib.load(filename= "../models/best_tree_model.pkl")
-        preprocessor = joblib.load(filename="../models/tree_processed_pipeline.pkl")
-        logger.info("Model and preprocessor loaded successfully")
+        model = joblib.load(MODELS_DIR / 'best_tree_model.pkl')
+        preprocessor = joblib.load(MODELS_DIR / 'best_tree_preprocessed_pipeline.pkl')
+        logger.info("✓ Model and preprocessor loaded successfully")
         return model, preprocessor
     except FileNotFoundError as e:
-        logger.error(f"Model files not found: {e}")
+        logger.error(f"✗ Model files not found: {e}")
         raise
 
 def calculate_pd(features: dict, model, preprocessor) -> float:
-    """Calculate Probability of Default (PD) using the trained LightGBM Model.
-
+    """
+    Calculate Probability of Default (PD) using the trained LightGBM model.
+    
     Args:
-        features: dict of applicant features (raw or preprocesed)
-        model: Trained LightGBM Classifier
+        features: dict of applicant features (raw or preprocessed)
+        model: Trained LightGBM classifier
         preprocessor: Fitted preprocessing pipeline
-
+    
     Returns:
         float: Probability between 0-1
-
     """
     import pandas as pd
-
-    # Expected by preprocessor
-    X =  pd.DataFrame([features])
-
+    
+    # Convert dict to DataFrame (expected by preprocessor)
+    X = pd.DataFrame([features])
+    
+    # Use only the feature columns expected by preprocessor
     try:
         X_preprocessed = preprocessor.transform(X)
     except Exception as e:
         logger.warning(f"Preprocessing failed, attempting direct prediction: {e}")
         X_preprocessed = X
     
+    # Get probability of default (class 1)
     pd_value = model.predict_proba(X_preprocessed)[0, 1]
     return float(pd_value)
 
 def calculate_ead(features: dict) -> float:
     """
     Calculate Exposure at Default (EAD) = loan amount.
-
+    
     Args:
-        features: dict with "loan_amnt" key
-
+        features: dict with 'loan_amnt' key
+    
     Returns:
         float: Loan amount in dollars
     """
@@ -62,45 +64,45 @@ def calculate_ead(features: dict) -> float:
 def get_lgd_by_segment(loan_intent: str, phase: int = 2) -> float:
     """
     Get Loss Given Default (LGD) by loan segment.
-
+    
     Phase 2: Return 1.0 (100% loss - simplified baseline)
     Phase 3: Load from lgd_by_segment.json (recovered-amount-based)
-
+    
     Args:
         loan_intent: Type of loan (PERSONAL, EDUCATION, MEDICAL, etc.)
         phase: 2 for simplified, 3 for segment-specific
-
+    
     Returns:
         float: LGD between 0-1
     """
-
     if phase == 2:
-        return 1.0 # Assume 100% loss for all defaulted loans (Phase 2 baseline)
+        return 1.0  # Assume 100% loss for all defaulted loans (Phase 2 baseline)
     
     elif phase == 3:
         try:
-            lgd_path = "../models/lgd_by_segment.json"
+            lgd_path = MODELS_DIR / 'lgd_by_segment.json'
             with open(lgd_path, 'r') as f:
                 lgd_map = json.load(f)
             return lgd_map.get(loan_intent, 1.0)
-        except FileNotFoundError as e:
-            logger.warning(f"LGD file not found, default to 1.0")
+        except FileNotFoundError:
+            logger.warning(f"LGD file not found, defaulting to 1.0")
             return 1.0
+    
     else:
         logger.error(f"Unknown phase: {phase}")
         return 1.0
-    
+
 def calculate_expected_loss(pd: float, lgd: float, ead: float) -> float:
     """
     Calculate Expected Loss (EL) using the credit risk formula.
-
-    EL = PD x LGD x EAD
-
+    
+    EL = PD × LGD × EAD
+    
     Args:
         pd: Probability of Default (0-1)
         lgd: Loss Given Default (0-1)
         ead: Exposure at Default ($)
-
+    
     Returns:
         float: Expected Loss in dollars
     """
@@ -111,20 +113,20 @@ def normalize_to_risk_score(pd: float) -> tuple:
     """
     Convert probability (0-1) to business-friendly risk score (0-100).
     Assign risk tier: LOW, MEDIUM, HIGH.
-
+    
     Args:
         pd: Probability of Default (0-1)
-
+    
     Returns:
         tuple: (risk_score: int 0-100, risk_tier: str)
     """
-
-    risk_score = int(np.clip(a = pd * 100, a_min = 0, a_max = 100))
-
+    # Non-linear scaling: emphasize differences in high-PD range
+    risk_score = int(np.clip(pd * 100, 0, 100))
+    
     if risk_score < 33:
         risk_tier = 'LOW'
     elif risk_score < 67:
-        risk_tier = "MEDIUM"
+        risk_tier = 'MEDIUM'
     else:
         risk_tier = 'HIGH'
     
@@ -134,14 +136,61 @@ def calculate_confidence(pd: float) -> float:
     """
     Calculate confidence score (how sure is the model?).
     Based on distance from 50% probability (most confident at 0% or 100%).
-
+    
     Args:
         pd: Probability of Default (0-1)
     
     Returns:
         float: Confidence 0-1
     """
-    
     confidence = 1 - abs(pd - 0.5) * 2
     return float(np.clip(confidence, 0, 1))
 
+def score_applicant(features: dict, phase: int = 2) -> dict:
+    """
+    Score a single applicant with full PD/LGD/EAD/EL components.
+    
+    This is the main function called by both the API and batch processing.
+    
+    Args:
+        features: dict of applicant features
+        phase: 2 (simplified LGD=1.0) or 3 (segment-specific LGD)
+    
+    Returns:
+        dict: {
+            'pd': float (0-1),
+            'lgd': float (0-1),
+            'ead': float ($),
+            'expected_loss': float ($),
+            'risk_score': int (0-100),
+            'risk_tier': str ('LOW'|'MEDIUM'|'HIGH'),
+            'confidence': float (0-1)
+        }
+    """
+    try:
+        model, preprocessor = load_model_and_preprocessor()
+        
+        # Calculate risk components
+        pd = calculate_pd(features, model, preprocessor)
+        ead = calculate_ead(features)
+        loan_intent = features.get('loan_intent', 'UNKNOWN')
+        lgd = get_lgd_by_segment(loan_intent, phase=phase)
+        el = calculate_expected_loss(pd, lgd, ead)
+        
+        # Calculate business-ready outputs
+        risk_score, risk_tier = normalize_to_risk_score(pd)
+        confidence = calculate_confidence(pd)
+        
+        return {
+            'pd': pd,
+            'lgd': lgd,
+            'ead': ead,
+            'expected_loss': el,
+            'risk_score': risk_score,
+            'risk_tier': risk_tier,
+            'confidence': confidence
+        }
+    
+    except Exception as e:
+        logger.error(f"Scoring failed: {e}")
+        raise
