@@ -107,5 +107,19 @@ def calculate_expected_loss(pd: float, lgd: float, ead: float) -> float:
     el = pd * lgd * ead
     return float(el)
 
+def normalize_to_risk_score(pd: float) -> tuple:
+    """
+    Convert probability (0-1) to business-friendly risk score (0-100).
+    Assign risk tier: LOW, MEDIUM, HIGH.
+
+    Args:
+        pd: Probability of Default (0-1)
+
+    Returns:
+        tuple: (risk_score: int 0-100, risk_tier: str)
+    """
+
+    int(np.clip(pd * 100, 100))
+
 
 
