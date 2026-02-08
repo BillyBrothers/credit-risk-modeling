@@ -2,6 +2,7 @@
 import json
 import joblib
 import numpy as np
+import pandas as pd
 from pathlib import Path
 from loguru import logger
 from credit_risk_modeling.config import MODELS_DIR
@@ -9,7 +10,7 @@ from credit_risk_modeling.config import MODELS_DIR
 def load_model_and_preprocessor():
     """Load the best trained model and preprocessing pipeline from models/ directory."""
     try:
-        model = joblib.load(MODELS_DIR / 'tree_model.pkl')
+        model = joblib.load(MODELS_DIR / 'best_tree_model.pkl')
         preprocessor = joblib.load(MODELS_DIR / 'tree_preprocessed_pipeline.pkl')
         logger.info("✓ Model and preprocessor loaded successfully")
         return model, preprocessor
@@ -17,11 +18,12 @@ def load_model_and_preprocessor():
         logger.error(f"✗ Model files not found: {e}")
         raise
 
-def calculate_pd(features: dict, model, preprocessor) -> float:
+def calculate_pd(dataset: pd.DataFrame, features: dict, model, preprocessor) -> float:
     """
     Calculate Probability of Default (PD) using the trained LightGBM model.
     
     Args:
+        dataset: pandas dataframe of imported dataset (raw, interim, or preprocessed)
         features: dict of applicant features (raw or preprocessed)
         model: Trained LightGBM classifier
         preprocessor: Fitted preprocessing pipeline
