@@ -9,8 +9,8 @@ from credit_risk_modeling.config import MODELS_DIR
 def load_model_and_preprocessor():
     """Load the best trained model and preprocessing pipeline from models/ directory."""
     try:
-        model = joblib.load(MODELS_DIR / 'best_tree_model.pkl')
-        preprocessor = joblib.load(MODELS_DIR / 'best_tree_preprocessed_pipeline.pkl')
+        model = joblib.load(MODELS_DIR / 'tree_model.pkl')
+        preprocessor = joblib.load(MODELS_DIR / 'tree_preprocessed_pipeline.pkl')
         logger.info("✓ Model and preprocessor loaded successfully")
         return model, preprocessor
     except FileNotFoundError as e:
