@@ -348,15 +348,28 @@ def comparing_manually_tuned_smoted_models(models, X_train, y_train, X_test, y_t
         )
     return df, fitted_models_manual
 
-def combine_model_performance(internal_tuned_models_df, manual_tuned_models_df, untuned_model_performance):
-    """Concatanate your performance dataframes."""
-    return pd.concat(
-    objs = [internal_tuned_models_df, manual_tuned_models_df, untuned_model_performance],
-    axis=0
-    ).sort_values(
-        ascending=False,
-        by='roc_auc'
+def combine_model_performance(
+    internal_tuned_models_df=None,
+    manual_tuned_models_df=None,
+    untuned_model_performance=None
+):
+    """Concatenate any available performance DataFrames."""
+    
+    dfs = [
+        df for df in 
+        [internal_tuned_models_df, manual_tuned_models_df, untuned_model_performance]
+        if df is not None
+    ]
+    
+    if len(dfs) < 1:
+        raise ValueError("At least one performance DataFrame must be provided.")
+    
+    return (
+        pd.concat(dfs, axis=0)
+          .sort_values(by="roc_auc", ascending=False)
+          .reset_index(drop=True)
     )
+
 
 
 def evaluate_calibration(final_model_performances, preferred_fitted_models, X_train, y_train, X_test, y_test):
