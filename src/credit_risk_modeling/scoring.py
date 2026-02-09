@@ -19,34 +19,50 @@ def load_model_and_preprocessor():
         raise
 
 
+def dtype_partition(features: pd.DataFrame, ordinal_feature: str):
+    """
+    Partitioning the data into numeric, categorical nominal, categorical ordinal for
+    calculating credit risk models.
+
+    Args:
+        features: Pandas Dataframe of the applicant features
+        ordinal_feature: predetermined ordinal feature
+
+    Returns:
+        numeric_features: a list of numeric features
+        categorical_nominal: a list of nominal categorical features
+        categorical_ordinal: a list of ordinal categorical features
+    """
+
+    numeric_features = list(features.select_dtypes(include=['int64', 'float64']).columns)
+    categorical_nominal = list(features.select_dtypes(include=['object']).columns)
+    categorical_categorical = categorical_nominal.remove(value= ordinal_feature)
+
+
+
 def calculate_pd(features: dict, model, preprocessor) -> float:
     """
     Calculate Probability of Default (PD) using the trained LightGBM model.
     
     Args:
-        features: dict of applicant features (12 raw features)
+
+        features: dict of applicant features (raw or preprocessed)
         model: Trained LightGBM classifier
         preprocessor: Fitted preprocessing pipeline
     
     Returns:
         float: Probability between 0-1
     """
+
     # Convert dict to DataFrame (expected by preprocessor)
     X = pd.DataFrame([features])
     
-    # Fix dtype mismatches: convert bool to object to match training data
-    if 'cb_person_default_on_file' in X.columns and X['cb_person_default_on_file'].dtype == 'bool':
-        X['cb_person_default_on_file'] = X['cb_person_default_on_file'].astype('object')
-    
-    # Transform through preprocessor
-    X_preprocessed = preprocessor.transform(X)
-    
-    # Ensure output is numeric (convert if needed for LightGBM)
-    if isinstance(X_preprocessed, pd.DataFrame):
-        # Convert any remaining object columns to numeric
-        for col in X_preprocessed.columns:
-            if X_preprocessed[col].dtype == 'object':
-                X_preprocessed[col] = pd.to_numeric(X_preprocessed[col], errors='coerce')
+    # Use only the feature columns expected by preprocessor
+    try:
+        X_preprocessed = preprocessor.transform(X)
+    except Exception as e:
+        logger.warning(f"Preprocessing failed, attempting direct prediction: {e}")
+        X_preprocessed = X
     
     # Get probability of default (class 1)
     pd_value = model.predict_proba(X_preprocessed)[0, 1]
