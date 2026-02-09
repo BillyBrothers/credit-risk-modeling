@@ -38,12 +38,15 @@ def calculate_pd(features: dict, model, preprocessor) -> float:
     if 'cb_person_default_on_file' in X.columns and X['cb_person_default_on_file'].dtype == 'bool':
         X['cb_person_default_on_file'] = X['cb_person_default_on_file'].astype('object')
     
-    # Use only the feature columns expected by preprocessor
-    try:
-        X_preprocessed = preprocessor.transform(X)
-    except Exception as e:
-        logger.warning(f"Preprocessing failed, attempting direct prediction: {e}")
-        X_preprocessed = X
+    # Transform through preprocessor
+    X_preprocessed = preprocessor.transform(X)
+    
+    # Ensure output is numeric (convert if needed for LightGBM)
+    if isinstance(X_preprocessed, pd.DataFrame):
+        # Convert any remaining object columns to numeric
+        for col in X_preprocessed.columns:
+            if X_preprocessed[col].dtype == 'object':
+                X_preprocessed[col] = pd.to_numeric(X_preprocessed[col], errors='coerce')
     
     # Get probability of default (class 1)
     pd_value = model.predict_proba(X_preprocessed)[0, 1]
