@@ -18,28 +18,6 @@ def load_model_and_preprocessor():
         logger.error(f"✗ Model files not found: {e}")
         raise
 
-
-def dtype_partition(features: pd.DataFrame, ordinal_feature: str):
-    """
-    Partitioning the data into numeric, categorical nominal, categorical ordinal for
-    calculating credit risk models.
-
-    Args:
-        features: Pandas Dataframe of the applicant features
-        ordinal_feature: predetermined ordinal feature
-
-    Returns:
-        numeric_features: a list of numeric features
-        categorical_nominal: a list of nominal categorical features
-        categorical_ordinal: a list of ordinal categorical features
-    """
-
-    numeric_features = list(features.select_dtypes(include=['int64', 'float64']).columns)
-    categorical_nominal = list(features.select_dtypes(include=['object']).columns)
-    categorical_categorical = categorical_nominal.remove(value= ordinal_feature)
-
-
-
 def calculate_pd(features: dict, model, preprocessor) -> float:
     """
     Calculate Probability of Default (PD) using the trained LightGBM model.
