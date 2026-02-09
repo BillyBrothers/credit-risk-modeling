@@ -24,17 +24,19 @@ def calculate_pd(features: dict, model, preprocessor) -> float:
     Calculate Probability of Default (PD) using the trained LightGBM model.
     
     Args:
-
-        features: dict of applicant features (raw or preprocessed)
+        features: dict of applicant features (12 raw features)
         model: Trained LightGBM classifier
         preprocessor: Fitted preprocessing pipeline
     
     Returns:
         float: Probability between 0-1
     """
-
     # Convert dict to DataFrame (expected by preprocessor)
     X = pd.DataFrame([features])
+    
+    # Fix dtype mismatches: convert bool to object to match training data
+    if 'cb_person_default_on_file' in X.columns and X['cb_person_default_on_file'].dtype == 'bool':
+        X['cb_person_default_on_file'] = X['cb_person_default_on_file'].astype('object')
     
     # Use only the feature columns expected by preprocessor
     try:
