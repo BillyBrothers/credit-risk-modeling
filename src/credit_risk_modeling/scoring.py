@@ -196,56 +196,56 @@ def score_applicant(features: dict, phase: int = 2) -> dict:
         logger.error(f"Scoring failed: {e}")
         raise
 
-    def score_batch(applicants_list: list):
-        """
-        Score a batch of applicants each with full PD/LGD/EAD/EL components.
-        
-        This is the main function called by both the API and batch processing.
-        
-        Args:
-            applicants_list: list of dict of multiple applicants and their respective features
-            phase: 2 (simplified LGD=1.0) or 3 (segment-specific LGD)
-        
-        Returns:
-            dict: {
-                'pd': float (0-1),
-                'lgd': float (0-1),
-                'ead': float ($),
-                'expected_loss': float ($),
-                'risk_score': int (0-100),
-                'risk_tier': str ('LOW'|'MEDIUM'|'HIGH'),
-                'confidence': float (0-1)
-            }
-        """
-        try:
-            model, preprocessor = load_model_and_preprocessor()
-            
-            batch_list = []
-            # Calculate risk components for each applicant
-            for applicant in applicants_list:
-                pd = calculate_pd(features, model, preprocessor)
-                ead = calculate_ead(features)
-                loan_intent = features.get('loan_intent', 'UNKNOWN')
-                lgd = get_lgd_by_segment(loan_intent, phase=phase)
-                el = calculate_expected_loss(pd, lgd, ead)
-                risk_score, risk_tier = normalize_to_risk_score(pd)
-                confidence = calculate_confidence(pd)
-            
-            # Calculate business-ready outputs
+def score_batch(applicants_list: list):
+    """
+    Score a batch of applicants each with full PD/LGD/EAD/EL components.
 
-            
-            applicant_scores = {
-                'pd': pd,
-                'lgd': lgd,
-                'ead': ead,
-                'expected_loss': el,
-                'risk_score': risk_score,
-                'risk_tier': risk_tier,
-                'confidence': confidence
-            }
+    This is the main function called by both the API and batch processing.
 
-            return batch_list.append(applicant_scores)
+    Args:
+        applicants_list: list of dict of multiple applicants and their respective features
+        phase: 2 (simplified LGD=1.0) or 3 (segment-specific LGD)
 
-        except Exception as e:
-            logger.error(f"Scoring failed: {e}")
-            raise
+    Returns:
+        dict: {
+            'pd': float (0-1),
+            'lgd': float (0-1),
+            'ead': float ($),
+            'expected_loss': float ($),
+            'risk_score': int (0-100),
+            'risk_tier': str ('LOW'|'MEDIUM'|'HIGH'),
+            'confidence': float (0-1)
+        }
+    """
+    try:
+        model, preprocessor = load_model_and_preprocessor()
+        
+        batch_list = []
+        # Calculate risk components for each applicant
+        for applicant in applicants_list:
+            pd = calculate_pd(features, model, preprocessor)
+            ead = calculate_ead(features)
+            loan_intent = features.get('loan_intent', 'UNKNOWN')
+            lgd = get_lgd_by_segment(loan_intent, phase=phase)
+            el = calculate_expected_loss(pd, lgd, ead)
+            risk_score, risk_tier = normalize_to_risk_score(pd)
+            confidence = calculate_confidence(pd)
+        
+        # Calculate business-ready outputs
+
+        
+        applicant_scores = {
+            'pd': pd,
+            'lgd': lgd,
+            'ead': ead,
+            'expected_loss': el,
+            'risk_score': risk_score,
+            'risk_tier': risk_tier,
+            'confidence': confidence
+        }
+
+        return batch_list.append(applicant_scores)
+
+    except Exception as e:
+        logger.error(f"Scoring failed: {e}")
+        raise
