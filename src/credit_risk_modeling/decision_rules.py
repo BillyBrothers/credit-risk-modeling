@@ -83,5 +83,20 @@ def decide(self, pd: float, lgd: float, ead: float, expected_loss: float,
 
             elif el_pct < manual_review_threshold:
                 decision = "MANUAL REVIEW"
-                reason
+                reason = (f" Manual Review required: Expected Loss of {el_pct*100:.2f}% falls in "
+                          f" review range ({auto_approve_threshold*100:.2f}%-{manual_review_threshold*100:.2f}%)"
+                          f"for {loan_intent} loans. "
+                          f"PD={pd:.2%}, LGD={lgd:.0%}, EAD=${ead:,.0f}"
+                          f"Recommend risk analyst review.")
+
+            else:
+                decision = "DENY"
+                reason = (f"Auto-denied: Expected Loss of {el_pct*100:.2f}% exceeds "
+                          f"Manual-review threshold ({manual_review_threshold*100:.2f}% for {loan_intent}) loans. "
+                          f"Risk unacceptable. "
+                          f"PD={pd:.2%}, LGD={lgd:.0%}, EAD=${ead:,.0%}")
+
+            
+            logger.info(f"Decision: {decision} | Applicant: {loan_intent} | "
+                        f"EL: {el_pct*100:.2f}")
 
