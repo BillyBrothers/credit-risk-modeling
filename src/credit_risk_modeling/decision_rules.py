@@ -27,76 +27,106 @@ class ApprovalRules:
                 "VENTURE": {"auto_approve_el_pct": 0.03, "manual_review_el_pct": 0.12},  # Very strict
             }
 
+
 class ApprovalRuleEngine:
     """Orchestrates approval decisions based on risk metrics and business rules.
     
     Separates ML predictions (scoring.py) from business policy (this module).
     Enables audit trails and consistent decision-making across applicants.
     """
-
+    
     def __init__(self, rules: ApprovalRules = None):
-         """Initialize engine with optional custom rules.
+        """Initialize engine with optional custom rules.
         
         Args:
             rules: ApprovalRules dataclass with configurable thresholds.
                    If None, uses defaults.
-        """       
-
+        """
         self.rules = rules or ApprovalRules()
         logger.info(f"✓ ApprovalRuleEngine initialized with thresholds: "
-                    f"auto_approve={self.rules.auto_approve_el_pct*100:.0f} "
-                    f"manual_review={self.rules.auto_approve_el_pct*100:.0f} ") 
-
-def decide(self, pd: float, lgd: float, ead: float, expected_loss: float,
-            loan_intent: str = "UNKNOWN") -> dict:
+                   f"auto_approve={self.rules.auto_approve_el_pct*100:.0f}%, "
+                   f"manual_review={self.rules.manual_review_el_pct*100:.0f}%")
+    
+    def decide(self, pd: float, lgd: float, ead: float, expected_loss: float, 
+               loan_intent: str = "UNKNOWN") -> dict:
         """Make approval decision based on risk metrics and business rules.
-            
-            Args:
-                pd: Probability of Default (0-1)
-                lgd: Loss
-                ead: Exposure at Default ($)
-                expected_loss: Expected Loss in dollars
-                loan_intent: Loan purpose (EDUCATION, MEDICAL, PERSONAL, VENTURE, etc.)
-
-            Returns:
-                dict with keys:
-                    - 'decision': 'APPROVE', 'DENY', or 'MANUAL_REVIEW'
-                    - 'reason': Explanation for audit trial
-                    - 'el_pct': Expected Loss as % of EAD
-            """
-
-            # Calculate EL as % of EAD (key business metric)
-            el_pct = expected_loss / ead if ead > 0 else 1.0
-
-            # Get segment-specific thresholds if available
-            segment_rules = self.rules.segment_strategies.get(loan_intent, {})
-            auto_approve_threshold = segment_rules.get("auto_approve_el_pct", self.rules.auto_approve_el_pct)
-            manual_review_threshold = segment_rules.get("manual_review_el_pct", self.rules.manual_review_el_pct)
-            
-
-            # Determine Decision
-            if el_pct < auto_approve_threshold:
-                decision = "APPROVE"
-                reason = (f"Manual review required: Expected Loss of {el_pct*100:.2f}% is below"
-                          f"auto-approve threshold ({auto_approve_threshold*100:.2f}%) for {loan_intent} loans."
-                          f"PD={pd:.2%}, LGD={lgd:.0%}, EAD=${ead:,.0f}")
-
-            elif el_pct < manual_review_threshold:
-                decision = "MANUAL REVIEW"
-                reason = (f" Manual Review required: Expected Loss of {el_pct*100:.2f}% falls in "
-                          f" review range ({auto_approve_threshold*100:.2f}%-{manual_review_threshold*100:.2f}%)"
-                          f"for {loan_intent} loans. "
-                          f"PD={pd:.2%}, LGD={lgd:.0%}, EAD=${ead:,.0f}"
-                          f"Recommend risk analyst review.")
-
-            else:
-                decision = "DENY"
-                reason = (f"Auto-denied: Expected Loss of {el_pct*100:.2f}% exceeds "
-                          f"Manual-review threshold ({manual_review_threshold*100:.2f}% for {loan_intent}) loans. "
-                          f"Risk unacceptable. "
-                          f"PD={pd:.2%}, LGD={lgd:.0%}, EAD=${ead:,.0%}")
-
-            
-            logger.info(f"Decision: {decision} | Applicant: {loan_intent} | "
-                        f"EL: {el_pct*100:.2f}")
-
+        
+        Args:
+            pd: Probability of Default (0-1)
+            lgd: Loss Given Default (0-1)
+            ead: Exposure at Default ($)
+            expected_loss: Expected Loss in dollars
+            loan_intent: Loan purpose (EDUCATION, MEDICAL, PERSONAL, VENTURE, etc.)
+        
+        Returns:
+            dict with keys:
+                - 'decision': 'APPROVE', 'DENY', or 'MANUAL_REVIEW'
+                - 'reason': Explanation for audit trail
+                - 'el_pct': Expected Loss as % of EAD
+        """
+        # Calculate EL as % of EAD (key business metric)
+        el_pct = expected_loss / ead if ead > 0 else 1.0
+        
+        # Get segment-specific thresholds if available
+        segment_rules = self.rules.segment_strategies.get(loan_intent, {})
+        auto_approve_threshold = segment_rules.get("auto_approve_el_pct", self.rules.auto_approve_el_pct)
+        manual_review_threshold = segment_rules.get("manual_review_el_pct", self.rules.manual_review_el_pct)
+        
+        # Determine decision
+        if el_pct < auto_approve_threshold:
+            decision = "APPROVE"
+            reason = (f"Auto-approved: Expected Loss of {el_pct*100:.2f}% is below "
+                     f"auto-approve threshold ({auto_approve_threshold*100:.2f}%) for {loan_intent} loans. "
+                     f"PD={pd:.2%}, LGD={lgd:.0%}, EAD=${ead:,.0f}")
+        
+        elif el_pct < manual_review_threshold:
+            decision = "MANUAL_REVIEW"
+            reason = (f"Manual review required: Expected Loss of {el_pct*100:.2f}% falls in "
+                     f"review range ({auto_approve_threshold*100:.2f}%-{manual_review_threshold*100:.2f}%) "
+                     f"for {loan_intent} loans. "
+                     f"PD={pd:.2%}, LGD={lgd:.0%}, EAD=${ead:,.0f}. "
+                     f"Recommend risk analyst review.")
+        
+        else:
+            decision = "DENY"
+            reason = (f"Auto-denied: Expected Loss of {el_pct*100:.2f}% exceeds "
+                     f"manual-review threshold ({manual_review_threshold*100:.2f}%) for {loan_intent} loans. "
+                     f"Risk unacceptable. "
+                     f"PD={pd:.2%}, LGD={lgd:.0%}, EAD=${ead:,.0f}")
+        
+        # Log for audit trail
+        logger.info(f"Decision: {decision} | Applicant: {loan_intent} | "
+                   f"EL: {el_pct*100:.2f}% | Reason: {reason[:80]}...")
+        
+        return {
+            "decision": decision,
+            "reason": reason,
+            "el_pct": el_pct
+        }
+    
+    def batch_decide(self, scoring_results: list) -> list:
+        """Apply decisions to multiple applicants.
+        
+        Args:
+            scoring_results: List of dicts from scoring.score_applicant()
+                            Each dict contains: pd, lgd, ead, expected_loss, risk_tier, loan_intent
+        
+        Returns:
+            List of decision dicts with approval outcomes
+        """
+        decisions = []
+        for applicant in scoring_results:
+            decision = self.decide(
+                pd=applicant['pd'],
+                lgd=applicant['lgd'],
+                ead=applicant['ead'],
+                expected_loss=applicant['expected_loss'],
+                loan_intent=applicant.get('loan_intent', 'UNKNOWN')
+            )
+            decisions.append({
+                **applicant,
+                **decision
+            })
+        
+        logger.info(f"✓ Batch decisions complete: {len(decisions)} applicants processed")
+        return decisions
