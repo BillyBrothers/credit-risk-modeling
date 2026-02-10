@@ -230,11 +230,8 @@ def score_batch(applicants_list: list, phase: int = 2):
             el = calculate_expected_loss(pd, lgd, ead)
             risk_score, risk_tier = normalize_to_risk_score(pd)
             confidence = calculate_confidence(pd)
-        
-        # Calculate business-ready outputs
 
-        
-        applicant_scores = {
+            applicant_scores = {
             'pd': pd,
             'lgd': lgd,
             'ead': ead,
@@ -243,8 +240,12 @@ def score_batch(applicants_list: list, phase: int = 2):
             'risk_tier': risk_tier,
             'confidence': confidence
         }
+            batch_list.append(applicant_scores)
+        
+        # Calculate business-ready outputs
 
-        return batch_list.append(applicant_scores)
+
+        return batch_list
 
     except Exception as e:
         logger.error(f"Scoring failed: {e}")
