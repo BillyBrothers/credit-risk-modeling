@@ -196,7 +196,7 @@ def score_applicant(features: dict, phase: int = 2) -> dict:
         logger.error(f"Scoring failed: {e}")
         raise
 
-def score_batch(applicants_list: list):
+def score_batch(applicants_list: list, phase: int = 2):
     """
     Score a batch of applicants each with full PD/LGD/EAD/EL components.
 
