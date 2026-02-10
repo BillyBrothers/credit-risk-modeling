@@ -81,3 +81,7 @@ def decide(self, pd: float, lgd: float, ead: float, expected_loss: float,
                           f"auto-approve threshold ({auto_approve_threshold*100:.2f}%) for {loan_intent} loans."
                           f"PD={pd:.2%}, LGD={lgd:.0%}, EAD=${ead:,.0f}")
 
+            elif el_pct < manual_review_threshold:
+                decision = "MANUAL REVIEW"
+                reason
+
