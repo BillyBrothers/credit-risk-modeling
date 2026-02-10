@@ -68,4 +68,16 @@ def decide(self, pd: float, lgd: float, ead: float, expected_loss: float,
             # Calculate EL as % of EAD (key business metric)
             el_pct = expected_loss / ead if ead > 0 else 1.0
 
+            # Get segment-specific thresholds if available
+            segment_rules = self.rules.segment_strategies.get(loan_intent, {})
+            auto_approve_threshold = segment_rules.get("auto_approve_el_pct", self.rules.auto_approve_el_pct)
+            manual_review_threshold = segment_rules.get("manual_review_el_pct", self.rules.manual_review_el_pct)
             
+
+            # Determine Decision
+            if el_pct < auto_approve_threshold:
+                decision = "APPROVE"
+                reason = (f"Manual review required: Expected Loss of {el_pct*100:.2f}% is below"
+                          f"auto-approve threshold ({auto_approve_threshold*100:.2f}%) for {loan_intent} loans."
+                          f"PD={pd:.2%}, LGD={lgd:.0%}, EAD=${ead:,.0f}")
+
