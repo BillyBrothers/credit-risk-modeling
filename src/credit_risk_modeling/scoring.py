@@ -223,9 +223,9 @@ def score_batch(applicants_list: list):
         batch_list = []
         # Calculate risk components for each applicant
         for applicant in applicants_list:
-            pd = calculate_pd(features, model, preprocessor)
-            ead = calculate_ead(features)
-            loan_intent = features.get('loan_intent', 'UNKNOWN')
+            pd = calculate_pd(applicant, model, preprocessor)
+            ead = calculate_ead(applicant)
+            loan_intent = applicant.get('loan_intent', 'UNKNOWN')
             lgd = get_lgd_by_segment(loan_intent, phase=phase)
             el = calculate_expected_loss(pd, lgd, ead)
             risk_score, risk_tier = normalize_to_risk_score(pd)
