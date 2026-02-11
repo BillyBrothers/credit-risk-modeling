@@ -105,3 +105,48 @@ async def score_applicant(applicant: ApplicantRequest, phase: int = 2, applicant
         logger.error(f"✗ Scoring failed for applicant {applicant_id or 'unknown'}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Scoring failed: {str(e)}")
 
+@app.post("/batch-score", response_model=list)
+async def batch_score(applicants: list[ApplicantRequest], phase: int = 2):
+    """
+    Score multiple applicants in batch.
+    
+    Args:
+        applicants: List of applicant requests
+        phase: 2 or 3 (LGD mode)
+    
+    Returns:
+        List of scoring + approval responses
+    """
+    try:
+        results = []
+        
+        for i, applicant in enumerate(applicants):
+            features = applicant.dict()
+            score = scoring.score_applicant(features=features, phase=phase)
+            decision = engine.decide(
+                pd=score['pd'],
+                lgd=score['lgd'],
+                ead=score['ead'],
+                expected_loss=score['expected_loss'],
+                loan_intent=features['loan_intent']
+            )
+            
+            response = FullScoringResponse(
+                scoring=ScoringResponse(**{k: v for k, v in score.items() if k in ['pd', 'lgd', 'ead', 'expected_loss', 'risk_score', 'risk_tier', 'confidence']}),
+                approval=ApprovalResponse(**decision),
+                applicant_id=f"batch_{i}"
+            )
+            results.append(response)
+        
+        logger.info(f"✓ Batch scored {len(applicants)} applicants")
+        return results
+    
+    except Exception as e:
+        logger.error(f"✗ Batch scoring failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Batch scoring failed: {str(e)}")
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
