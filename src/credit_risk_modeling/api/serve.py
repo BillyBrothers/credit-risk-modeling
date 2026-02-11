@@ -7,7 +7,7 @@ import traceback
 
 from credit_risk_modeling import scoring, decision_rules
 
-FastAPI(
+app = FastAPI(
     title = "Credit Risk Scoring API",
     description = "Real-time loan applicant risk scoring and approval decisions",
     version= "1.0.0"
@@ -55,3 +55,8 @@ class FullScoringResponse(BaseModel):
     scoring: ScoringResponse
     approval: ApprovalResponse
     applicant_id: Optional[str] = None
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "service": "Credit Risk Scoring API"}
