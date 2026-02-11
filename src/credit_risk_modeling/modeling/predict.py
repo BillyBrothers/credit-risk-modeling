@@ -99,26 +99,22 @@ try:
         logger.error(f"✗ Batch prediction failed: {str(e)}")
         raise typer.Exit(code=1)
 
-
-
-
-
 @app.command()
-def main(
-    # ---- REPLACE DEFAULT PATHS AS APPROPRIATE ----
-    features_path: Path = PROCESSED_DATA_DIR / "test_features.csv",
-    model_path: Path = MODELS_DIR / "model.pkl",
-    predictions_path: Path = PROCESSED_DATA_DIR / "test_predictions.csv",
-    # -----------------------------------------
+def score_csv(
+    input_csv: Path = typer.Option(..., help="Input CSV with applicant features"),
+    output_csv: Path = typer.Option("scored_applicants.csv", help="Output CSV path"),
+    phase: int = typer.Option(2, help="LGD phase (2 or 3)")
 ):
-    # ---- REPLACE THIS WITH YOUR OWN CODE ----
-    logger.info("Performing inference for model...")
-    for i in tqdm(range(10), total=10):
-        if i == 5:
-            logger.info("Something happened for iteration 5.")
-    logger.success("Inference complete.")
-    # -----------------------------------------
+    """Simplified CLI: score applicants and save results"""
+    batch_predict(
+        input_path=input_csv,
+        output_path=output_csv,
+        phase=phase,
+        include_reasoning=True
+    )
+    logger.success(f"✓ Scoring complete. Results in {output_csv}")
 
 
 if __name__ == "__main__":
     app()
+
