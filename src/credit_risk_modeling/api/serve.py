@@ -60,3 +60,48 @@ class FullScoringResponse(BaseModel):
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": "Credit Risk Scoring API"}
+
+
+@app.post("/score", response_model=FullScoringResponse)
+async def score_applicant(applicant: ApplicantRequest, phase: int = 2, applicant_id: Optional[str] = None):
+    """
+    Score a single applicant and return approval decision.
+    
+    Args:
+        applicant: Applicant features (11 inputs)
+        phase: 2 (LGD=1.0) or 3 (segment-specific LGD)
+        applicant_id: Optional ID for tracking/audit
+    
+    Returns:
+        Scoring metrics + approval decision
+    """
+    try:
+        # Convert request to dict
+        features = applicant.dict()
+        
+        # Score applicant
+        score = scoring.score_applicant(features=features, phase=phase)
+        
+        # Get approval decision
+        decision = engine.decide(
+            pd=score['pd'],
+            lgd=score['lgd'],
+            ead=score['ead'],
+            expected_loss=score['expected_loss'],
+            loan_intent=features['loan_intent']
+        )
+        
+        # Format response
+        response = FullScoringResponse(
+            scoring=ScoringResponse(**{k: v for k, v in score.items() if k in ['pd', 'lgd', 'ead', 'expected_loss', 'risk_score', 'risk_tier', 'confidence']}),
+            approval=ApprovalResponse(**decision),
+            applicant_id=applicant_id
+        )
+        
+        logger.info(f"✓ Scored applicant {applicant_id or 'unknown'}: {decision['decision']}")
+        return response
+    
+    except Exception as e:
+        logger.error(f"✗ Scoring failed for applicant {applicant_id or 'unknown'}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Scoring failed: {str(e)}")
+
