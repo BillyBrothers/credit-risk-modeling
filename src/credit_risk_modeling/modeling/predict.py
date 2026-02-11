@@ -85,6 +85,23 @@ try:
                 continue
 
 
+        # Save results
+        results_df = pd.DataFrame(results)
+        results_df.to_csv(output_path, index=False)
+        logger.info(f"✓ Results saved to {output_path}")
+        logger.info(f"  Total scored: {len(results_df)}")
+        logger.info(f"  Approval breakdown:")
+        logger.info(f"    APPROVE: {(results_df['decision']=='APPROVE').sum()}")
+        logger.info(f"    MANUAL_REVIEW: {(results_df['decision']=='MANUAL_REVIEW').sum()}")
+        logger.info(f"    DENY: {(results_df['decision']=='DENY').sum()}")
+    
+    except Exception as e:
+        logger.error(f"✗ Batch prediction failed: {str(e)}")
+        raise typer.Exit(code=1)
+
+
+
+
 
 @app.command()
 def main(
