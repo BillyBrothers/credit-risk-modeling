@@ -13,7 +13,7 @@ dependencies:
   - matplotlib
   - missingno
   - notebook
-  - numpy
+  - numpy<=1.24.3
   - pandas=1.5.3
   - pip
   - pytest=7.2.2
@@ -28,6 +28,9 @@ dependencies:
   - xgboost
   - pip:
       - -e .
+      - fastapi
       - mkdocs
       - pyampute
       - python-dotenv
+      - requests
+      - uvicorn
