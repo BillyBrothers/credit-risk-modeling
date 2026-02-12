@@ -17,7 +17,7 @@ app = FastAPI(
 model, preprocessor = scoring.load_model_and_processor()
 engine = decision_rules.ApprovalRuleEngine()
 
-# logger.info("✓ FastAPI server initialized with model and decision engine")
+logger.info("✓ FastAPI server initialized with model and decision engine")
 
 class ApplicantRequest(BaseModel):
     """Applicant features for scoring request"""
@@ -60,6 +60,7 @@ class FullScoringResponse(BaseModel):
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": "Credit Risk Scoring API"}
+
 
 
 @app.post("/score", response_model=FullScoringResponse)
