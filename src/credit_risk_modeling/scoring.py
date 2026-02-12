@@ -232,19 +232,16 @@ def score_batch(applicants_list: list, phase: int = 2):
             confidence = calculate_confidence(pd)
 
             applicant_scores = {
-            'pd': pd,
-            'lgd': lgd,
-            'ead': ead,
-            'expected_loss': el,
-            'risk_score': risk_score,
-            'risk_tier': risk_tier,
-            'confidence': confidence
-        }
+                'pd': pd,
+                'lgd': lgd,
+                'ead': ead,
+                'expected_loss': el,
+                'risk_score': risk_score,
+                'risk_tier': risk_tier,
+                'confidence': confidence
+            }
             batch_list.append(applicant_scores)
         
-        # Calculate business-ready outputs
-
-
         return batch_list
 
     except Exception as e:
