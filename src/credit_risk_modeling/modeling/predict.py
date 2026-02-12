@@ -1,12 +1,16 @@
+"""Batch prediction and scoring CLI"""
+import typer
+import pandas as pd
+import joblib
 from pathlib import Path
-
 from loguru import logger
 from tqdm import tqdm
-import typer
 
-from credit_risk_modeling.config import MODELS_DIR, PROCESSED_DATA_DIR
+from credit_risk_modeling import config, scoring, decision_rules
+
 
 app = typer.Typer()
+
 
 @app.command()
 def batch_predict(
@@ -21,11 +25,10 @@ def batch_predict(
     phase: int = typer.Option(2, help="LGD phase: 2 (simplified) or 3 (segment-specific)"),
     include_reasoning: bool = typer.Option(True, help="Include approval reasoning in output")
 ):
-
     """
     Score multiple applicants from CSV file.
     
-    Input CSV must have 11 columns (raw features):
+    Input CSV must have 12 columns (raw features):
     person_age, person_income, person_home_ownership, person_emp_length,
     loan_intent, loan_grade, loan_amnt, loan_int_rate, loan_percent_income,
     cb_person_default_on_file, cb_person_cred_hist_length
@@ -33,7 +36,7 @@ def batch_predict(
     Output CSV includes: [input features] + [pd, lgd, ead, expected_loss, 
     risk_score, risk_tier, confidence, decision, el_pct] + [reason]
     """
-try:
+    try:
         # Load input data
         logger.info(f"Loading applicants from {input_path}")
         df = pd.read_csv(input_path)
@@ -83,8 +86,7 @@ try:
             except Exception as e:
                 logger.warning(f"Failed to score applicant {idx}: {str(e)}")
                 continue
-
-
+        
         # Save results
         results_df = pd.DataFrame(results)
         results_df.to_csv(output_path, index=False)
@@ -98,6 +100,7 @@ try:
     except Exception as e:
         logger.error(f"✗ Batch prediction failed: {str(e)}")
         raise typer.Exit(code=1)
+
 
 @app.command()
 def score_csv(
@@ -117,4 +120,3 @@ def score_csv(
 
 if __name__ == "__main__":
     app()
-
