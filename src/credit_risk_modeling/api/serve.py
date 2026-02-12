@@ -14,7 +14,7 @@ app = FastAPI(
 )
 
 # Load model and preprocessor on startup
-model, preprocessor = scoring.load_model_and_processor()
+model, preprocessor = scoring.load_model_and_preprocessor()
 engine = decision_rules.ApprovalRuleEngine()
 
 logger.info("✓ FastAPI server initialized with model and decision engine")
@@ -149,5 +149,5 @@ async def batch_score(applicants: list[ApplicantRequest], phase: int = 2):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
 
