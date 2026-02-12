@@ -23,10 +23,10 @@ class ApplicantRequest(BaseModel):
     """Applicant features for scoring request"""
     person_age: int = Field(..., ge=18, le=90)
     person_income: int = Field(..., ge=0)
-    person_home_ownership: str = Field(..., regex="^(RENT|OWN|MORTGAGE)$")
+    person_home_ownership: str = Field(..., pattern="^(RENT|OWN|MORTGAGE)$")
     person_emp_length: float = Field(..., ge=0)
-    loan_intent: str = Field(..., regex="^(EDUCATION|MEDICAL|VENTURE|PERSONAL|HOMEIMPROVEMENT|DEBTCONSOLIDATION)$")
-    loan_grade: str = Field(..., regex="^[A-G]$")
+    loan_intent: str = Field(..., pattern="^(EDUCATION|MEDICAL|VENTURE|PERSONAL|HOMEIMPROVEMENT|DEBTCONSOLIDATION)$")
+    loan_grade: str = Field(..., pattern="^[A-G]$")
     loan_amnt: int = Field(..., ge=100, le=100000)
     loan_int_rate: float = Field(..., ge=0, le=35)
     loan_percent_income: float = Field(..., ge=0, le=1)
