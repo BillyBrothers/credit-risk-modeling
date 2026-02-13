@@ -1,0 +1,30 @@
+
+====================================================================
+            MODEL EXPLAINABILITY REPORT
+====================================================================
+
+FEATURE IMPORTANCE (Top 10)
+────────────────────────────────────────────────────────────────
+numeric__person_age            ██ 0.0526
+numeric__person_income         ██ 0.0526
+numeric__person_emp_length     ██ 0.0526
+numeric__loan_amnt             ██ 0.0526
+numeric__loan_int_rate         ██ 0.0526
+numeric__loan_percent_income   ██ 0.0526
+numeric__cb_person_default_on_file ██ 0.0526
+numeric__cb_person_cred_hist_length ██ 0.0526
+ordinal__loan_grade            ██ 0.0526
+categorical__person_home_ownership_MORTGAGE ██ 0.0526
+
+
+MODEL INSIGHTS
+────────────────────────────────────────────────────────────────
+Total Features:           19
+Top Feature:              numeric__person_age
+Top Feature Importance:   0.0526
+
+Feature Diversity:
+- Top 3 features explain   15.8% of importance
+- Top 10 features explain  52.6% of importance
+
+====================================================================
