@@ -13,8 +13,8 @@ dependencies:
   - matplotlib
   - missingno
   - notebook
-  - numpy<=1.24.3
-  - pandas=1.5.3
+  - numpy>=1.24,<1.26
+  - pandas>=2.0,<2.2
   - pip
   - pytest=7.2.2
   - python=3.11
@@ -27,6 +27,7 @@ dependencies:
   - typer
   - xgboost
   - pip:
+      - shap
       - -e .
       - fastapi
       - mkdocs
