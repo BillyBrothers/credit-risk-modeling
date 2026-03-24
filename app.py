@@ -183,7 +183,7 @@ elif page == "👤 Score Applicant":
                 "Employment Length (years)", min_value=0.0, max_value=50.0, value=3.0, step=0.5
             )
         with col5:
-            cb_person_default_on_file = st.selectbox(
+            cb_person_default_on_file_str = st.selectbox(
                 "Prior Default on File", ["N", "Y"]
             )
 
@@ -232,7 +232,8 @@ elif page == "👤 Score Applicant":
             "loan_amnt": loan_amnt,
             "loan_int_rate": loan_int_rate,
             "loan_percent_income": loan_percent_income,
-            "cb_person_default_on_file": cb_person_default_on_file,
+            # preprocessor expects 0/1, not 'Y'/'N'
+            "cb_person_default_on_file": 1 if cb_person_default_on_file_str == "Y" else 0,
             "cb_person_cred_hist_length": cb_person_cred_hist_length,
         }
 
