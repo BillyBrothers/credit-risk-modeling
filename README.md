@@ -45,11 +45,9 @@
     │
     ├── config.py               <- Centralized path management and configuration
     │
-    ├── dataset.py              <- CLI: Load raw data and create interim datasets
+    ├── dataset.py              <- CLI: Load raw data and create interim datasets (Stage 1)
     │
-    ├── preprocessing.py        <- CLI: Feature engineering and model-specific pipelines
-    │
-    ├── features.py             <- CLI: Feature engineering from interim data
+    ├── preprocessing.py        <- CLI: Build model-specific pipelines (Stage 2)
     │
     ├── model_eval.py           <- Model evaluation utilities (ROC, PR curves, calibration)
     │
@@ -65,7 +63,7 @@
     │
     ├── model_monitor.py        <- Model drift detection and data quality monitoring
     │
-    ├── explainibility.py       <- Feature importance and prediction explanability
+    ├── explainibility.py       <- Feature importance and prediction explainability
     │
     ├── plots.py                <- Visualization utilities
     │
@@ -74,7 +72,7 @@
     │
     └── modeling                
         ├── __init__.py 
-        ├── predict.py          <- CLI: Batch scoring on CSV files          
+        ├── predict.py          <- CLI: Batch scoring on CSV files (Stage 3)
         └── train.py            <- CLI: Model training with hyperparameter tuning
 ```
 
@@ -99,33 +97,42 @@ make requirements
 
 The project follows a strict three-stage data pipeline:
 
-**Stage 1: Raw → Interim** (Load & Basic Preprocessing)
+**Stage 1: Raw → Interim** (Load & Split Data)
 ```bash
 python -m credit_risk_modeling.dataset
 ```
 - Loads `data/raw/credit_risk_dataset.csv`
-- Handles missing values, explores MCAR/MAR/MNAR patterns
-- Creates train/val/test split
-- Outputs: `data/interim/credit_risk_dataset_prepped.csv`, `y_train.csv`, `y_test.csv`, `y_val.csv`
+- Handles duplicate rows
+- Creates stratified train/validation/test splits (70/15/15) preserving class distribution
+- Outputs: `data/interim/credit_risk_dataset_prepped.csv`, `X_train.csv`, `X_val.csv`, `X_test.csv`, `y_train.csv`, `y_test.csv`, `y_val.csv`
 
-**Stage 2: Interim → Processed** (Feature Engineering & Model-Specific Pipelines)
+**Stage 2: Interim → Processed** (Feature Engineering & Model Pipelines)
 ```bash
-python -m credit_risk_modeling.features
 python -m credit_risk_modeling.preprocessing
 ```
-- Features: Feature engineering (binning, scaling, transformations)
-- Preprocessing: Creates 5 model-specific feature sets (linear, tree, distance, probability, neural)
+- Loads preprocessed data from Stage 1
+- Builds 5 model-specific preprocessing pipelines:
+  - **Linear**: Power transformation + polynomial features + scaling
+  - **Tree**: Outlier handling (Winsorizer) + encoding
+  - **Distance**: Power transformation + scaling (for KNN/similarity)
+  - **Probability**: Discretization + OneHot encoding + scaling
+  - **Neural**: Power transformation + scaling
+- Fits pipelines on training data, transforms all sets
+- Saves pipelines as `.pkl` files to `models/`
 - Outputs: `data/processed/X_{train,test,val}_{linear,tree,distance,probability,neural}.csv`
 
-**Stage 3: Processed → Models** (Training & Scoring)
+**Stage 3: Processed → Predictions** (Batch Scoring)
 ```bash
-python -m credit_risk_modeling.modeling.train
 python -m credit_risk_modeling.modeling.predict --input-csv data/processed/test_data.csv
 ```
+- Uses pre-trained models from `models/` directory
+- Scores applicants with preprocessed features
+- Calculates risk scores, tiers, and approval decisions
+- Outputs predictions with all inputs + risk metrics to CSV
 
 ### Model Training
 
-Train LightGBM, XGBoost, and scikit-learn models with hyperparameter tuning:
+Pre-trained models are provided in `models/` directory. To retrain models with custom hyperparameters:
 
 ```bash
 python -m credit_risk_modeling.modeling.train \
@@ -203,18 +210,16 @@ Computes segment-specific recovery rates for Basel risk calculations.
 ```
 Raw Data (CSV)
      ↓
-[dataset.py] → Data Cleaning, Missing Value Analysis, Train/Test Split
+[dataset.py] → Load, Handle Duplicates, Create Train/Val/Test Splits
      ↓
-Interim Data (Cleaned, Split)
+Interim Data (Split, Ready for Preprocessing)
      ↓
-[features.py] → Feature Engineering, Transformations
-[preprocessing.py] → Model-Specific Pipelines
+[preprocessing.py] → Build 5 Model-Specific Pipelines (Linear/Tree/Distance/Probability/Neural)
      ↓
-Processed Data (5 Feature Sets for Different Model Types)
+Processed Data (5 Feature Sets, One per Model Type)
      ↓
-[train.py] → Train LightGBM, XGBoost, scikit-learn Models
-[predict.py] → Batch Inference
-[serve.py] → Real-Time API
+[predict.py] → Batch Inference Using Pre-Trained Models
+[serve.py] → Real-Time API Scoring
      ↓
 [scoring.py] → Risk Score Calculation (PD × LGD × EAD = Expected Loss)
 [decision_rules.py] → Approval Decisions
